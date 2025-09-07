@@ -7,6 +7,7 @@ const Layer = @import("../router/middleware.zig").Layer;
 const TypedMiddlewareFn = @import("../router/middleware.zig").TypedMiddlewareFn;
 
 const Kind = union(enum) {
+std.compress.zstd.Decompress
     gzip: std.compress.gzip.Options,
 };
 
@@ -21,7 +22,7 @@ pub fn Compression(comptime compression: Kind) Layer {
                 const respond = try next.run();
                 const response = next.context.response;
                 if (response.body) |body| if (respond == .standard) {
-                    var compressed = try std.ArrayListUnmanaged(u8).initCapacity(next.context.allocator, body.len);
+                    var compressed: std.ArrayList(u8) = try .initCapacity(next.context.allocator, body.len);
                     errdefer compressed.deinit(next.context.allocator);
 
                     var body_stream = std.io.fixedBufferStream(body);

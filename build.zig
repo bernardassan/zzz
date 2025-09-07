@@ -1,8 +1,15 @@
 const std = @import("std");
 
+const Tls = enum {
+    bearssl,
+    s2n_tls,
+};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    const tls = b.option(Tls, "tls", "enable bearssl or s2n_tls (experimental)") orelse .bearssl;
 
     const zzz = b.addModule("zzz", .{
         .root_source_file = b.path("src/lib.zig"),
@@ -20,6 +27,10 @@ pub fn build(b: *std.Build) void {
     const secsock = b.dependency("secsock", .{
         .target = target,
         .optimize = optimize,
+        .s2n_tls = switch (tls) {
+            .s2n_tls => true,
+            else => false,
+        },
     }).module("secsock");
 
     zzz.addImport("secsock", secsock);
@@ -32,16 +43,20 @@ pub fn build(b: *std.Build) void {
     add_example(b, "sse", false, target, optimize, zzz);
     add_example(b, "tls", true, target, optimize, zzz);
 
-    if (target.result.os.tag != .windows) {
-        add_example(b, "unix", false, target, optimize, zzz);
-    }
+    if (target.result.os.tag != .windows) add_example(b, "unix", false, target, optimize, zzz);
+
+    const mod = b.createModule(.{
+        .root_source_file = b.path("./src/tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    mod.addImport("tardy", tardy);
+    mod.addImport("secsock", secsock);
 
     const tests = b.addTest(.{
         .name = "tests",
-        .root_source_file = b.path("./src/tests.zig"),
+        .root_module = mod,
     });
-    tests.root_module.addImport("tardy", tardy);
-    tests.root_module.addImport("secsock", secsock);
 
     const run_test = b.addRunArtifact(tests);
     run_test.step.dependOn(&tests.step);
@@ -55,22 +70,22 @@ fn add_example(
     name: []const u8,
     link_libc: bool,
     target: std.Build.ResolvedTarget,
-    optimize: std.builtin.Mode,
+    optimize: std.builtin.OptimizeMode,
     zzz_module: *std.Build.Module,
 ) void {
-    const example = b.addExecutable(.{
-        .name = name,
+    const mod = b.createModule(.{
         .root_source_file = b.path(b.fmt("./examples/{s}/main.zig", .{name})),
         .target = target,
         .optimize = optimize,
         .strip = false,
+        .link_libc = link_libc,
     });
+    mod.addImport("zzz", zzz_module);
 
-    if (link_libc) {
-        example.linkLibC();
-    }
-
-    example.root_module.addImport("zzz", zzz_module);
+    const example = b.addExecutable(.{
+        .name = name,
+        .root_module = mod,
+    });
 
     const install_artifact = b.addInstallArtifact(example, .{});
     b.getInstallStep().dependOn(&install_artifact.step);

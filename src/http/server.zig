@@ -1,47 +1,41 @@
 const std = @import("std");
+const assert = std.debug.assert;
 const builtin = @import("builtin");
 const tag = builtin.os.tag;
-const assert = std.debug.assert;
-const log = std.log.scoped(.@"zzz/http/server");
 
-const TypedStorage = @import("../core/typed_storage.zig").TypedStorage;
-const Pseudoslice = @import("../core/pseudoslice.zig").Pseudoslice;
-const AnyCaseStringMap = @import("../core/any_case_string_map.zig").AnyCaseStringMap;
-
-const Context = @import("context.zig").Context;
-const Request = @import("request.zig").Request;
-const Response = @import("response.zig").Response;
-const Respond = @import("response.zig").Respond;
-const Capture = @import("router/routing_trie.zig").Capture;
-const SSE = @import("sse.zig").SSE;
-
-const Mime = @import("mime.zig").Mime;
-const Router = @import("router.zig").Router;
-const Route = @import("router/route.zig").Route;
-const Layer = @import("router/middleware.zig").Layer;
-const Middleware = @import("router/middleware.zig").Middleware;
-const HTTPError = @import("lib.zig").HTTPError;
-
-const HandlerWithData = @import("router/route.zig").HandlerWithData;
-
-const Next = @import("router/middleware.zig").Next;
-
-pub const Runtime = @import("tardy").Runtime;
-pub const Task = @import("tardy").Task;
-const TardyCreator = @import("tardy").Tardy;
-
+const AcceptResult = @import("tardy").AcceptResult;
 const Cross = @import("tardy").Cross;
 const Pool = @import("tardy").Pool;
 const PoolKind = @import("tardy").PoolKind;
-const Socket = @import("tardy").Socket;
-const ZeroCopy = @import("tardy").ZeroCopy;
-
-const AcceptResult = @import("tardy").AcceptResult;
 const RecvResult = @import("tardy").RecvResult;
-const SendResult = @import("tardy").SendResult;
-
+pub const Runtime = @import("tardy").Runtime;
 const secsock = @import("secsock");
 const SecureSocket = secsock.SecureSocket;
+const SendResult = @import("tardy").SendResult;
+const Socket = @import("tardy").Socket;
+const TardyCreator = @import("tardy").Tardy;
+pub const Task = @import("tardy").Task;
+const ZeroCopy = @import("tardy").ZeroCopy;
+
+const AnyCaseStringMap = @import("../core/any_case_string_map.zig").AnyCaseStringMap;
+const Pseudoslice = @import("../core/pseudoslice.zig").Pseudoslice;
+const TypedStorage = @import("../core/typed_storage.zig").TypedStorage;
+const Context = @import("context.zig").Context;
+const HTTPError = @import("lib.zig").HTTPError;
+const Mime = @import("mime.zig").Mime;
+const Request = @import("request.zig").Request;
+const Respond = @import("response.zig").Respond;
+const Response = @import("response.zig").Response;
+const Router = @import("router.zig").Router;
+const Layer = @import("router/middleware.zig").Layer;
+const Middleware = @import("router/middleware.zig").Middleware;
+const Next = @import("router/middleware.zig").Next;
+const Route = @import("router/route.zig").Route;
+const HandlerWithData = @import("router/route.zig").HandlerWithData;
+const Capture = @import("router/routing_trie.zig").Capture;
+const SSE = @import("sse.zig").SSE;
+
+const log = std.log.scoped(.@"zzz/http/server");
 
 pub const TLSFileOptions = union(enum) {
     buffer: []const u8,
@@ -505,15 +499,15 @@ pub const Server = struct {
             ) catch {
                 @panic("attempting to allocate more memory than available. (ZeroCopy)");
             };
-            provision.header_buffer = std.ArrayList(u8).init(rt.allocator);
-            provision.arena = std.heap.ArenaAllocator.init(rt.allocator);
+            provision.header_buffer = .empty;
+            provision.arena = .init(rt.allocator);
             provision.captures = rt.allocator.alloc(Capture, self.config.capture_count_max) catch {
                 @panic("attempting to allocate more memory than available. (Captures)");
             };
-            provision.queries = AnyCaseStringMap.init(rt.allocator);
-            provision.storage = TypedStorage.init(rt.allocator);
-            provision.request = Request.init(rt.allocator);
-            provision.response = Response.init(rt.allocator);
+            provision.queries = .init(rt.allocator);
+            provision.storage = .init(rt.allocator);
+            provision.request = .init(rt.allocator);
+            provision.response = .init(rt.allocator);
         }
 
         try rt.spawn(

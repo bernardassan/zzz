@@ -17,7 +17,7 @@ pub const Context = struct {
     allocator: std.mem.Allocator,
     /// Not safe to access unless you are manually sending the headers
     /// and returning the .responded variant of Respond.
-    header_buffer: *std.ArrayList(u8),
+    header_buffer: *std.Io.Writer.Allocating,
     runtime: *Runtime,
     /// The Request that triggered this handler.
     request: *const Request,

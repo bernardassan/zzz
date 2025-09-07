@@ -1,12 +1,13 @@
 const std = @import("std");
 const assert = std.debug.assert;
-
-const AnyCaseStringMap = @import("../core/any_case_string_map.zig").AnyCaseStringMap;
-const Status = @import("lib.zig").Status;
-const Mime = @import("lib.zig").Mime;
-const Date = @import("lib.zig").Date;
+const Writer = std.Io.Writer;
 
 const Stream = @import("tardy").Stream;
+
+const AnyCaseStringMap = @import("../core/any_case_string_map.zig").AnyCaseStringMap;
+const Date = @import("lib.zig").Date;
+const Mime = @import("lib.zig").Mime;
+const Status = @import("lib.zig").Status;
 
 pub const Respond = enum {
     // When we are returning a real HTTP request, we use this.
@@ -54,7 +55,7 @@ pub const Response = struct {
         self.headers.clearRetainingCapacity();
     }
 
-    pub fn headers_into_writer(self: *Response, writer: anytype, content_length: ?usize) !void {
+    pub fn headers_into_writer(self: *Response, writer: *Writer, content_length: ?usize) !void {
         // Status Line
         const status = self.status.?;
         try writer.print("HTTP/1.1 {d} {s}\r\n", .{ @intFromEnum(status), @tagName(status) });
